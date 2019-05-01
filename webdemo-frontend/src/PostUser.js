@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import './App.css';
 import AddEntry from './AddEntry.js';
 import EditEntry from './EditEntry.js';
+import DelEntry from './DelEntry.js';
+
 
 class PostUser extends Component {
 
@@ -17,6 +19,8 @@ class PostUser extends Component {
         //Necessary bindings
         this.GetEntries = this.GetEntries.bind(this);
         this.GetFoods = this.GetFoods.bind(this);
+        this.GetCategories = this.GetCategories.bind(this);
+        this.GetTimesOfDay = this.GetTimesOfDay.bind(this);
         this.componentDidMount = this.componentDidMount.bind(this);
         this.UpdateEntries = this.UpdateEntries.bind(this);
         this.DelFoodClick = this.DelFoodClick.bind(this);
@@ -45,15 +49,20 @@ class PostUser extends Component {
         //Can cause errors otherwise
         var testfunction = this.GetEntries;
         var testfunction2 = this.GetFoods;
+        var testfunction3 = this.GetCategories;
+        var testfunction4 = this.GetTimesOfDay;
         Promise.all([new Promise(function(resolve,reject){testfunction(resolve,reject);}),
-            new Promise(function(resolve,reject){testfunction2(resolve,reject);})])
+            new Promise(function(resolve,reject){testfunction2(resolve,reject);}),
+            new Promise(function(resolve,reject){testfunction3(resolve,reject);}),
+            new Promise(function(resolve,reject){testfunction4(resolve,reject);})
+        ])
             .then(()=>{
                 this.PostEntries();
 
                 //Renders things if they haven't already been rendered
                 if (this.state.addrend == false){
                     this.setState({...this.state, addrend: true});
-                    ReactDOM.render(<AddEntry userId = {this.props.userId} updateFunction = {this.UpdateEntries}/>, document.getElementById('addentry'));
+                    ReactDOM.render(<AddEntry returnf = {this.UpdateEntries} timesOfDay = {this.state.timesOfDay} foodCategory = {this.state.categories} foodList = {this.state.foods} userId = {this.props.userId} updateFunction = {this.UpdateEntries}/>, document.getElementById('addentry'));
                     ReactDOM.render(<button onClick={this.Logout}>Log Out</button>,document.getElementById('logoutbutton'))
                 }
                     
@@ -82,6 +91,45 @@ class PostUser extends Component {
                resolve();
            })//.catch(() =>{reject();});
            ;
+    }
+
+    GetCategories(resolve,reject)
+    {
+        const apiUrl= 'https://localhost:5001/api/foodcategory/';
+        console.log(apiUrl);
+        fetch(apiUrl, {
+           method: "GET",
+           headers: {
+               "Accept": "application/json",
+               "Content-Type": "application/json"
+           },
+       }).then((response) => response.json())
+           .then((json) => {
+               this.setState({...this.state, categories: json});
+               console.log(this.state.categories)
+               resolve();
+           }).catch(() =>{
+               console.log("This failed");
+               reject();});
+    }
+
+    GetTimesOfDay(resolve,reject)
+    {
+        const apiUrl= 'https://localhost:5001/api/timesofday/';
+        console.log(apiUrl);
+        fetch(apiUrl, {
+           method: "GET",
+           headers: {
+               "Accept": "application/json",
+               "Content-Type": "application/json"
+           },
+       }).then((response) => response.json())
+           .then((json) => {
+               this.setState({...this.state, timesOfDay: json});
+               resolve();
+           }).catch(() =>{
+               console.log("This failed");
+               reject();});
     }
 
     //Makes two fetches for the Foods table (simplify into one? Prob requires backend changes....)
@@ -133,22 +181,22 @@ class PostUser extends Component {
     //Called when the user clicks a delete button
     DelFoodClick(event)
     {
-        //Informs the user that things are being deleted from the database
-        document.getElementById('posterror').innerHTML = "Starting deletion...";
 
         //The ids used have the form DEL123456 so we remove the non-numerical characters
         let entryid = event.target.id.replace(/[^\d.]/g, '');
-        console.log(entryid);
-        let testfunction = this.DelFood;
 
+        let delentry = this.state.entries.find(function(f) {return f.entryId == entryid; });
+        let foodname = this.state.foods.find(function(f) {return f.foodId == delentry.foodId; }).foodName;
+
+        ReactDOM.render(<DelEntry foodname = {foodname} userId = {this.props.userId} iEntry = {delentry} ReturnCh = {this.UpdateEntries} Returnf = {this.PostEntries}/>, document.getElementById('postentry'));
         //This promise makes sure that we only update the table when the fetch is succesful
-        new Promise(function(resolve,reject){
+        /*new Promise(function(resolve,reject){
             testfunction(resolve,reject,entryid)
         }).then(() => {
             this.UpdateEntries();
         }).catch(()=> {
             document.getElementById('posterror').innerHTML = "Error in deletion";
-        });
+        });*/
     }
 
     //Function for when Edit is clicked
@@ -162,7 +210,7 @@ class PostUser extends Component {
 
         //Rends an entry edit component, passes down the user id and the initial state, as well as the functions
         //to be called when returning from the edit screen, Returnf for when no edits were made and ReturnCh when the have been
-        ReactDOM.render(<EditEntry userId = {this.props.userId} iEntry = {editentry} ReturnCh = {this.UpdateEntries} Returnf = {this.PostEntries}/>, document.getElementById('postentry'));
+        ReactDOM.render(<EditEntry timesOfDay = {this.state.timesOfDay} foodCategory = {this.state.categories} foodList = {this.state.foods} userId = {this.props.userId} iEntry = {editentry} ReturnCh = {this.UpdateEntries} Returnf = {this.PostEntries}/>, document.getElementById('postentry'));
 
     }
 
@@ -190,10 +238,12 @@ class PostUser extends Component {
     {
         //Removes needless mounts if necessary
         ReactDOM.unmountComponentAtNode(document.getElementById('postentry'));
-        var food = [];
+        let food = [];
+        let category = "";
+        let timeofday = "";
 
         //Created a html code for the table where the data will be presented in
-        let entries = "<table><thead><tr><th>Food</th><th>Amount</th><th>Category</th><th/></tr></thead><tbody>";
+        let entries = "<table><thead><tr><th>Food</th><th>Amount</th><th>Category</th><th>Time of Day</th><th>Date</th><th>DEL</th><th>EDIT</th></tr></thead><tbody>";
         let e="";
 
         //Make sure that there is data in the entries state
@@ -206,12 +256,15 @@ class PostUser extends Component {
             {
                 var currentry = this.state.entries[e];
 
+                timeofday = this.state.timesOfDay.find(function(f) {return currentry.timeOfDay == f.timeOfDay});
+                if (timeofday == undefined) timeofday = "Unknown";
+                else timeofday = timeofday.nameOfTime;
                 //Finds the name of the food in question instead of posting a meaningless number ID
                 food = this.state.foods.find(function(f) {return currentry.foodId == f.foodId });
-
+                category = this.state.categories.find(function(f) {return food.foodCategoryId == f.foodCategoryId });
                 //Includes the data as well as DEL and EDIT options
-                entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount + 
-                    food.foodCategoryId + "g</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
+                entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount +"g</td><td>" 
+                    + category.foodCategoryName + "</td><td>" + timeofday + "</td><td>" + currentry.date + "</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
             }
             //Finishes the table
             entries += "</tbody></table>";
