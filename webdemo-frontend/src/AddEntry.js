@@ -10,9 +10,10 @@ constructor(props){
     //to call when refreshing the table containing the data
     var newdate = new Date();
     newdate = newdate.toISOString().substr(0,10);
-    console.log(newdate);
-    this.state = {foodName: "", foodId: "", foodAmount: "", timeOfDay: "", food: this.props.foodList,
-                    categories: this.props.foodCategory, category: "", date: newdate, timesOfDay: this.props.timesOfDay, kcal: "",
+    let foodcats = [{foodCategoryId: 0, foodCategoryName: "<>"}];
+    foodcats = foodcats.concat(this.props.foodCategory);
+    this.state = {foodName: "", foodId: "", foodAmount: "", timeOfDay: "", food: this.props.foodList, tempfood: this.props.foodList,
+                    categories: foodcats, category: "", date: newdate, timesOfDay: this.props.timesOfDay, kcal: "",
                   ReturnCh: this.props.returnf};
 
 
@@ -21,7 +22,23 @@ constructor(props){
     this.ChangeFoodAmount = this.ChangeFoodAmount.bind(this);
     this.ChangeTimeOfDay = this.ChangeTimeOfDay.bind(this);
     this.ClickAddEntry = this.ClickAddEntry.bind(this);
+    this.ChangeTempFoodList = this.ChangeTempFoodList.bind(this);
 }
+
+ChangeTempFoodList(value)
+{
+  let fl = "";
+    if (value == "" || value == "<>")
+    {
+      this.setState({...this.state, tempfood: this.props.foodList, category: value});
+    }
+    else{
+      let catId = this.state.categories.find(function(f){return f.foodCategoryName == value}).foodCategoryId;
+      let newlist = this.state.food.filter(function(f){return f.foodCategoryId == catId});
+      this.setState({...this.state, tempfood: newlist, category: value});
+    }
+}
+
 
 ChangeFoodId(event)
 {
@@ -44,7 +61,7 @@ ClickAddEntry(event)
   event.preventDefault();
 
   //Checks the validity of the data
-  if (this.props.userId == "" || this.state.foodName == "" || this.state.foodAmount == ""|| this.state.timeOfDay == "" || this.state.category=="")
+  if (this.props.userId == "" || this.state.foodName == "" || this.state.foodAmount == ""|| this.state.timeOfDay == "" || this.state.category=="" ||this.state.category == "<>")
   {
       document.getElementById('errors').innerHTML = "You must insert values into boxes";
       return;
@@ -146,9 +163,23 @@ render(){
         <div>
         <div> Add new entry:</div>
         <form>
+
+        <Autocomplete id="editcategory"
+        getItemValue={(item) => item.foodCategoryName}
+        items={this.state.categories}
+        renderItem={(item, isHighlighted) =>
+          <div key={item.foodCategoryId} style={{ background: isHighlighted ? 'lightgray' : 'white' }}>
+            {item.foodCategoryName}
+          </div>
+        }
+        value={this.state.category}
+
+        onSelect={(value) => {this.ChangeTempFoodList(value);}}
+      />
+
         <Autocomplete
         getItemValue={(item) => item.foodName}
-        items={this.state.food}
+        items={this.state.tempfood}
         renderItem={(item, isHighlighted) =>
           <div key={item.foodId} style={{ background: isHighlighted ? 'lightgray' : 'white' }}>
             {item.foodName}
@@ -174,19 +205,6 @@ render(){
 
             }
             console.log(tempId)}}
-      />
-
-<Autocomplete id="editcategory"
-        getItemValue={(item) => item.foodCategoryName}
-        items={this.state.categories}
-        renderItem={(item, isHighlighted) =>
-          <div key={item.foodCategoryId} style={{ background: isHighlighted ? 'lightgray' : 'white' }}>
-            {item.foodCategoryName}
-          </div>
-        }
-        value={this.state.category}
-
-        onSelect={(value) => {this.setState({...this.state, category: value});}}
       />
 
 <input type='text' placeholder='kcal/100g' value={this.state.kcal} onChange={(e) => {this.setState({...this.state, kcal: e.target.value})}}></input>

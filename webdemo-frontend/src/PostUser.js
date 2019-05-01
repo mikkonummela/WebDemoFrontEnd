@@ -264,7 +264,7 @@ class PostUser extends Component {
                 category = this.state.categories.find(function(f) {return food.foodCategoryId == f.foodCategoryId });
                 //Includes the data as well as DEL and EDIT options
                 entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount +"g</td><td>" 
-                    + category.foodCategoryName + "</td><td>" + timeofday + "</td><td>" + currentry.date + "</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
+                    + category.foodCategoryName + "</td><td>" + timeofday + "</td><td>" + currentry.date.substr(0,10) + "</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
             }
             //Finishes the table
             entries += "</tbody></table>";
