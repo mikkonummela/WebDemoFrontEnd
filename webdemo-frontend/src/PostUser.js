@@ -28,12 +28,14 @@ class PostUser extends Component {
         this.EditFoodClick = this.EditFoodClick.bind(this);
         this.Logout = this.Logout.bind(this);
         this.PostEntries = this.PostEntries.bind(this);
+        this.PostEntriesDate = this.PostEntriesDate.bind(this);
     }
 
     //Called only when render() has been so we can affect the rendered <div>s
     componentDidMount()
      {
          this.UpdateEntries();
+         ReactDOM.render(<div><p>List of Entries</p><input id='loe' type='date' onChange={(e)=>{console.log("" === e.target.value)}}/><button onClick={this.PostEntriesDate}>Select Date</button></div>,  document.getElementById('loediv'));
      }
 
     //This functions gets information from the database and shows it to the user
@@ -60,7 +62,7 @@ class PostUser extends Component {
                 this.PostEntries();
 
                 //Renders things if they haven't already been rendered
-                if (this.state.addrend == false){
+                if (this.state.addrend === false){
                     this.setState({...this.state, addrend: true});
                     ReactDOM.render(<AddEntry returnf = {this.UpdateEntries} timesOfDay = {this.state.timesOfDay} foodCategory = {this.state.categories} foodList = {this.state.foods} userId = {this.props.userId} updateFunction = {this.UpdateEntries}/>, document.getElementById('addentry'));
                     ReactDOM.render(<button onClick={this.Logout}>Log Out</button>,document.getElementById('logoutbutton'))
@@ -87,10 +89,8 @@ class PostUser extends Component {
        }).then((response) => response.json())
            .then((json) => {
                this.setState({...this.state, entries: json});
-               console.log(this.state.entries)
                resolve();
-           })//.catch(() =>{reject();});
-           ;
+           }).catch((e) =>{console.log(e); reject();});
     }
 
     GetCategories(resolve,reject)
@@ -106,10 +106,9 @@ class PostUser extends Component {
        }).then((response) => response.json())
            .then((json) => {
                this.setState({...this.state, categories: json});
-               console.log(this.state.categories)
                resolve();
-           }).catch(() =>{
-               console.log("This failed");
+           }).catch((e) =>{
+               console.log(e);
                reject();});
     }
 
@@ -127,8 +126,8 @@ class PostUser extends Component {
            .then((json) => {
                this.setState({...this.state, timesOfDay: json});
                resolve();
-           }).catch(() =>{
-               console.log("This failed");
+           }).catch((e) =>{
+               console.log(e);
                reject();});
     }
 
@@ -151,9 +150,8 @@ class PostUser extends Component {
        .then((json) =>{
                // store the data returned from the backend to the current state
                foods = json;
-               console.log(foods);
-           }).catch(() => {
-                console.log("ERROR1");
+           }).catch((e) => {
+               console.log(e);
                 reject();
            }).then(() => fetch(apiUrl2, {
             method: "GET",
@@ -164,15 +162,13 @@ class PostUser extends Component {
            })).then((response) => response.json())
         .then((json) =>{
                 // store the data returned from the backend to the current state
-                console.log(json);
 
                 //Combines the fetched data
                 foods = foods.concat(json);
-                console.log(foods);
                 this.setState({...this.state, foods: foods});
                 resolve();
-            }).catch(() =>{
-                console.log("ERROR2");
+            }).catch((e) =>{
+                console.log(e);
                 reject();
             })
             ;
@@ -185,8 +181,8 @@ class PostUser extends Component {
         //The ids used have the form DEL123456 so we remove the non-numerical characters
         let entryid = event.target.id.replace(/[^\d.]/g, '');
 
-        let delentry = this.state.entries.find(function(f) {return f.entryId == entryid; });
-        let foodname = this.state.foods.find(function(f) {return f.foodId == delentry.foodId; }).foodName;
+        let delentry = this.state.entries.find(function(f) {return f.entryId.toString() === entryid; });
+        let foodname = this.state.foods.find(function(f) {return f.foodId === delentry.foodId; }).foodName;
 
         ReactDOM.render(<DelEntry foodname = {foodname} userId = {this.props.userId} iEntry = {delentry} ReturnCh = {this.UpdateEntries} Returnf = {this.PostEntries}/>, document.getElementById('postentry'));
         //This promise makes sure that we only update the table when the fetch is succesful
@@ -206,7 +202,7 @@ class PostUser extends Component {
         let entryid = event.target.id.replace(/[^\d.]/g, '');
 
         //Uses the properly formed ID to find the Entry in question we want to edit
-        let editentry = this.state.entries.find(function(f) {return f.entryId == entryid; });
+        let editentry = this.state.entries.find(function(f) {return f.entryId.toString() === entryid; });
 
         //Rends an entry edit component, passes down the user id and the initial state, as well as the functions
         //to be called when returning from the edit screen, Returnf for when no edits were made and ReturnCh when the have been
@@ -227,9 +223,8 @@ class PostUser extends Component {
            },
             }).then((response) => response.json())
            .then((json) => {
-               console.log(json);
                resolve();
-           });//.catch(() =>{return Promise.reject()});
+           }).catch((e) =>{console.log(e); return Promise.reject();});
         }
 
     //Posts the entries in a component after they have been fetched. Make sure the entry data actually e_ists
@@ -243,7 +238,7 @@ class PostUser extends Component {
         let timeofday = "";
 
         //Created a html code for the table where the data will be presented in
-        let entries = "<table><thead><tr><th>Food</th><th>Amount</th><th>Category</th><th>Time of Day</th><th>Date</th><th>DEL</th><th>EDIT</th></tr></thead><tbody>";
+        let entries = "<table><thead><tr><th>Food</th><th>Amount</th><th>Total kcal</th><th>Category</th><th>Time of Day</th><th>Date</th><th>DEL</th><th>EDIT</th></tr></thead><tbody>";
         let e="";
 
         //Make sure that there is data in the entries state
@@ -251,19 +246,22 @@ class PostUser extends Component {
             document.getElementById('postentry').innerHTML = "No entries found (connection errors possible?)";
         }
         else{
+            function CompToD (f) {return this.timeOfDay === f.timeOfDay};
+            function CompFood (f) {return this.foodId === f.foodId }
+            function CompCat (f) {return this.foodCategoryId === f.foodCategoryId}
             //Loops over the states in order to properly create the table
             for(e in this.state.entries)
             {
                 var currentry = this.state.entries[e];
 
-                timeofday = this.state.timesOfDay.find(function(f) {return currentry.timeOfDay == f.timeOfDay});
-                if (timeofday == undefined) timeofday = "Unknown";
+                timeofday = this.state.timesOfDay.find(CompToD,currentry);
+                if (timeofday === undefined) timeofday = "Unknown";
                 else timeofday = timeofday.nameOfTime;
                 //Finds the name of the food in question instead of posting a meaningless number ID
-                food = this.state.foods.find(function(f) {return currentry.foodId == f.foodId });
-                category = this.state.categories.find(function(f) {return food.foodCategoryId == f.foodCategoryId });
+                food = this.state.foods.find(CompFood,currentry);
+                category = this.state.categories.find(CompCat,food);
                 //Includes the data as well as DEL and EDIT options
-                entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount +"g</td><td>" 
+                entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount +"g</td><td>" + (currentry.foodAmount * food.kcal /100) + "</td><td>"
                     + category.foodCategoryName + "</td><td>" + timeofday + "</td><td>" + currentry.date.substr(0,10) + "</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
             }
             //Finishes the table
@@ -281,6 +279,64 @@ class PostUser extends Component {
         }
     }
 
+    PostEntriesDate()
+    {
+        console.log(document.getElementById('loe').value);
+
+        if (document.getElementById('loe').value === ""){
+            this.PostEntries();
+            return;
+        }
+        ReactDOM.unmountComponentAtNode(document.getElementById('postentry'));
+        let food = [];
+        let category = "";
+        let timeofday = "";
+
+        //Created a html code for the table where the data will be presented in
+        let entries = "<table><thead><tr><th>Food</th><th>Amount</th><th>Total kcal</th><th>Category</th><th>Time of Day</th><th>Date</th><th>DEL</th><th>EDIT</th></tr></thead><tbody>";
+        let e="";
+
+        //Make sure that there is data in the entries state
+        if(this.state.entries == null){
+            document.getElementById('postentry').innerHTML = "No entries found (connection errors possible?)";
+        }
+        else{
+            function CompToD (f) {return this.timeOfDay === f.timeOfDay};
+            function CompFood (f) {return this.foodId === f.foodId }
+            function CompCat (f) {return this.foodCategoryId === f.foodCategoryId}
+            //Loops over the states in order to properly create the table
+            for(e in this.state.entries)
+            {
+                var currentry = this.state.entries[e];
+                console.log(document.getElementById('loe').value);
+                console.log(currentry.date);
+                if (currentry.date.substr(0,10) !== document.getElementById('loe').value) continue;
+                timeofday = this.state.timesOfDay.find(CompToD,currentry);
+                if (timeofday === undefined) timeofday = "Unknown";
+                else timeofday = timeofday.nameOfTime;
+                //Finds the name of the food in question instead of posting a meaningless number ID
+                food = this.state.foods.find(CompFood,currentry);
+                category = this.state.categories.find(CompCat,food);
+                //Includes the data as well as DEL and EDIT options
+                entries += "<tr><td>" + food.foodName + "</td><td>" + currentry.foodAmount +"g</td><td>" + (currentry.foodAmount * food.kcal /100) + "</td><td>"
+                    + category.foodCategoryName + "</td><td>" + timeofday + "</td><td>" + currentry.date.substr(0,10) + "</td><td id=del" + currentry.entryId +" delid =" + currentry.entryId +">DEL</td><td id=edit" + currentry.entryId +" editlid =" + currentry.entryId +">EDIT</td></tr>";
+            }
+            //Finishes the table
+            entries += "</tbody></table>";
+
+            //Render the table we just created
+            document.getElementById('postentry').innerHTML = entries;
+
+            //Creates the onClick functionalities, they don't seem to work when added in the string itself
+            for(e in this.state.entries)
+            {
+                if (currentry.date !== document.getElementById('loe').value) continue;
+                document.getElementById('del' + this.state.entries[e].entryId).onclick = this.DelFoodClick;
+                document.getElementById('edit' + this.state.entries[e].entryId).onclick = this.EditFoodClick;
+            }
+        }
+    }
+
     //Logs out and returns to the username input screen. Unnecessary?
     Logout(event){
         event.preventDefault();
@@ -291,10 +347,12 @@ class PostUser extends Component {
     render() {
         return (
             <div>
-            <div id="postentry"/>
-            <div id="posterror"/>
             <div id="addentry"/>
             <div id="logoutbutton"></div>
+            <div id="loediv"></div>
+            <div id="postentry"/>
+            <div id="posterror"/>
+            
             </div>
         );
     }

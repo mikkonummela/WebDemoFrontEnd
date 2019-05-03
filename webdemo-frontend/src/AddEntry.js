@@ -16,8 +16,6 @@ constructor(props){
                     categories: foodcats, category: "", date: newdate, timesOfDay: this.props.timesOfDay, kcal: "",
                   ReturnCh: this.props.returnf};
 
-
-    console.log(this.state.food);
     this.ChangeFoodId = this.ChangeFoodId.bind(this);
     this.ChangeFoodAmount = this.ChangeFoodAmount.bind(this);
     this.ChangeTimeOfDay = this.ChangeTimeOfDay.bind(this);
@@ -27,14 +25,13 @@ constructor(props){
 
 ChangeTempFoodList(value)
 {
-  let fl = "";
-    if (value == "" || value == "<>")
+    if (value === "" || value === "<>")
     {
       this.setState({...this.state, tempfood: this.props.foodList, category: value});
     }
     else{
-      let catId = this.state.categories.find(function(f){return f.foodCategoryName == value}).foodCategoryId;
-      let newlist = this.state.food.filter(function(f){return f.foodCategoryId == catId});
+      let catId = this.state.categories.find(function(f){return f.foodCategoryName === value}).foodCategoryId;
+      let newlist = this.state.food.filter(function(f){return f.foodCategoryId === catId});
       this.setState({...this.state, tempfood: newlist, category: value});
     }
 }
@@ -61,53 +58,49 @@ ClickAddEntry(event)
   event.preventDefault();
 
   //Checks the validity of the data
-  if (this.props.userId == "" || this.state.foodName == "" || this.state.foodAmount == ""|| this.state.timeOfDay == "" || this.state.category=="" ||this.state.category == "<>")
+  if (this.props.userId === "" || this.state.foodName === "" || this.state.foodAmount === ""|| this.state.timeOfDay === "" || this.state.category==="" ||this.state.category === "<>")
   {
       document.getElementById('errors').innerHTML = "You must insert values into boxes";
       return;
   }
-  if (!(/^\d+$/.test(this.props.userId) && /^\d+$/.test(this.state.foodId) && /^\d+$/.test(this.state.foodAmount)))
+  if (!(/^\d+$/.test(this.props.userId) && (/^\d+$/.test(this.state.foodId) || this.state.foodId === "") && /^\d+$/.test(this.state.foodAmount)))
   {
       document.getElementById('errors').innerHTML = "Invalid input values";
       return;
   }
 
   let tempTime = this.state.timeOfDay;
-  let timeOfDay = this.state.timesOfDay.find(function(f){return tempTime == f.nameOfTime}).timeOfDay;
+  let timeOfDay = this.state.timesOfDay.find(function(f){return tempTime === f.nameOfTime}).timeOfDay;
   let categ = this.state.category;
   let categId = 0;
   let kcal = this.state.kcal;
   let userId = this.props.userId;
-  console.log(this.state.categories);
-  if (!(categ == null ||categ == undefined || categ==""))
+  if (!(categ === null ||categ === undefined || categ===""))
   {
       categId = this.state.categories.find(function(f){
-          console.log(f.foodCategoryName +"=" +categ);
-          return f.foodCategoryName == categ}).foodCategoryId;
+          return f.foodCategoryName === categ}).foodCategoryId;
   }
 
   let newfood=[];
   let food = this.state.foodName;
   let tempId = this.state.food.find(function(f){
-      return (food == f.foodName && (userId == f.addedUserId ||f.addedUserId == null));});
+      return (food === f.foodName && (userId === f.addedUserId ||f.addedUserId === null));});
 
 
 
-  if(tempId != undefined && (categId != tempId.foodCategoryId || kcal != tempId.kcal))
+  if(tempId !== undefined && (categId !== tempId.foodCategoryId || kcal !== tempId.kcal))
   {
     document.getElementById('errors').innerHTML = "Food names must be unique with their categories and kcals. Please give the food a unique name.";
       return;
   }
-  if (tempId == undefined)
+  if (tempId === undefined)
   {
-      console.log("test1");
-      newfood = {foodId: 0, foodName: this.state.foodName, foodCategoryId: this.state.categories.find(function (f){return f.foodCategoryName == categ}).foodCategoryId,
+      newfood = {foodId: 0, foodName: this.state.foodName, foodCategoryId: this.state.categories.find(function (f){return f.foodCategoryName === categ}).foodCategoryId,
           kcal: this.state.kcal, addedUserId: this.props.userId};
       tempId = 0;
   }
   else
   {
-      console.log("test2");
           tempId = tempId.foodId;
   }
   //Create a variable to store the data into for the fetch
@@ -119,8 +112,6 @@ ClickAddEntry(event)
 
   const apiUrl= 'https://localhost:5001/api/entry/';
   console.log(apiUrl);
-      console.log(newEntry);
-      console.log(newfood);
   new Promise(function f(resolve,reject){
       if (tempId > 0)
       {
@@ -134,7 +125,6 @@ ClickAddEntry(event)
           },body: JSON.stringify(newfood)
       }).then((response) => response.json())
           .then((json) => {
-              console.log(json);
               newEntry = {...newEntry, foodId: json};
               resolve();
           }).catch(()=>{reject()})}).then(()=>
@@ -147,7 +137,6 @@ ClickAddEntry(event)
          },body: JSON.stringify(newEntry)
      }).then((response) => response.json())
          .then((json) => {
-             console.log(json)
              //We fetched so we need to get the new data from the database
              this.state.ReturnCh();
          }).catch((e) =>{
@@ -188,23 +177,21 @@ render(){
         value={this.state.foodName}
 
         onChange={(e) => {
-            this.setState({...this.state, foodName: e.target.value, category: ""});
+            this.setState({...this.state, foodName: e.target.value});
                 }}
 
-        onSelect={(value) => {console.log(value);
-            let tempId = this.state.food.find(function(f){return value == f.foodName});
-            let tempCat = this.state.categories.find(function(f){return tempId.foodCategoryId == f.foodCategoryId});
+        onSelect={(value) => {
+            let tempId = this.state.food.find(function(f){return value === f.foodName});
+            let tempCat = this.state.categories.find(function(f){return tempId.foodCategoryId === f.foodCategoryId});
             let kcal = tempId.kcal;
-            console.log(kcal);
-            if (kcal == undefined ||kcal == null) kcal = "";
-            if (tempCat == undefined) this.setState({...this.state, foodName: value, foodId: tempId.foodId, category: "", kcal: kcal});
+            if (kcal === undefined ||kcal === null) kcal = "";
+            if (tempCat === undefined) this.setState({...this.state, foodName: value, foodId: tempId.foodId, category: "", kcal: kcal});
             else{
                 this.setState({...this.state, foodName: value, foodId: tempId.foodId, category:
                     tempCat.foodCategoryName, kcal: kcal
                 });
 
-            }
-            console.log(tempId)}}
+            }}}
       />
 
 <input type='text' placeholder='kcal/100g' value={this.state.kcal} onChange={(e) => {this.setState({...this.state, kcal: e.target.value})}}></input>

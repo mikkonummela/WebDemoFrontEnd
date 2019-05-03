@@ -24,7 +24,7 @@ class ChooseUser extends Component {
     NewUser(event)
     {
         event.preventDefault();
-        if (this.state.username == "" || this.state.password == "")
+        if (this.state.username === "" || this.state.password === "")
         {
             document.getElementById('testi').innerHTML = "You must specify a username and a password";
             return;
@@ -47,7 +47,7 @@ class ChooseUser extends Component {
        }).then((response) => response.json())
            .then((json) => {
                const success = json;
-               if (success == -1)
+               if (success === -1)
                {
                    document.getElementById('testi').innerHTML = "User with that username already exists";
                 }
@@ -88,7 +88,7 @@ class ChooseUser extends Component {
         event.preventDefault();
 
         //Make sure a proper username has been inserted
-        if (this.state.username == "")
+        if (this.state.username === "")
         {
             document.getElementById('testi').innerHTML = "You must specify a username and a password";
             return;
@@ -110,9 +110,8 @@ class ChooseUser extends Component {
            },
        }).then((response) => response.json())
            .then((json) => {
-               console.log(json);
                const success = json;
-               if (success.password == this.state.password || (success.password == null && this.state.password == ""))
+               if (success.password === this.state.password || (success.password === null && this.state.password === ""))
                {
                    //Empties the divs that don't have a purpose anymore
                      document.getElementById('chooseuser').innerHTML = "<div/>"
@@ -122,7 +121,7 @@ class ChooseUser extends Component {
                    ReactDOM.render(<PostUser Logout = {this.props.Logout} userId={success.userId}/>, document.getElementById('root2'))
                 }
                else{
-                console.log("wrong psswrd");
+                console.log("Check your password");
                 throw Error;
                } 
                
@@ -146,9 +145,9 @@ class ChooseUser extends Component {
         <form>
             <input type="text" placeholder="Username" value={this.state.username} onChange={this.ChangeUsername}></input>
             <input type="password" placeholder="Password" value={this.state.password} onChange={this.ChangePassword}></input>
+            </form>
             <button onClick={this.DoStuff}>Log In</button>
             <button onClick={this.NewUser}>Create new account</button>
-        </form>
         </div>
         <div id="testi"></div>
         <div id="root2"/>
